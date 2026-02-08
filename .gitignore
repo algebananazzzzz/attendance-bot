@@ -1,0 +1,75 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+*.pyo
+*.so
+*.egg
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+.mypy_cache/
+.pyre/
+.ruff_cache/
+.pytype/
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.sample
+.envrc
+
+# Credentials / secrets
+service-account.json
+credentials/
+.aws/
+*/.aws/
+*.pem
+*.key
+
+# Logs
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.terraform.lock.hcl
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Serverless build artifacts
+.aws-sam/
+.serverless/
+*.zip

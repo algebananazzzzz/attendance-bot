@@ -1,0 +1,86 @@
+# .github/workflows/prd-deployment.yml
+name: Production Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+' # e.g., v1.2.0
+
+jobs:
+  infra-deploy-prd:
+    name: Provision Infrastructure (Production)
+    runs-on: ubuntu-latest
+    environment: prd
+
+    outputs:
+      ECR_REPOSITORY_URL: ${{ steps.deploy.outputs.ecr_repository_url }}
+      FUNCTION_NAME: ${{ steps.deploy.outputs.function_name }}
+
+    steps:
+      - name: 🧪 Validate tag format
+        run: |
+          if [[ ! "$GITHUB_REF" =~ ^refs/tags/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid tag format: $GITHUB_REF"
+            exit 1
+          fi
+
+      - name: ⬇️ Checkout Code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: ⚙️ Setup Terraform CLI
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+
+      - name: 🚀 Apply Terraform for Production Infra
+        id: deploy
+        working-directory: infra
+        run: |
+          terraform init -input=false
+          terraform workspace select -or-create prd-app
+          terraform plan --var-file=config/prd.tfvars -out=output.tfplan -input=false
+          terraform apply -input=false --auto-approve output.tfplan
+          echo "ECR_REPOSITORY_URL=$(terraform output -raw ecr_repository_url)" >> $GITHUB_OUTPUT
+          echo "FUNCTION_NAME=$(terraform output -raw function_name)" >> $GITHUB_OUTPUT
+
+ 
+  docker-deploy-prd:
+    name: Build & Deploy Docker to Lambda (prd)
+    runs-on: ubuntu-latest
+    environment: prd
+    needs: infra-deploy-prd
+    if: success()
+
+    steps:
+      - name: 1. ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. 🔐 Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: 3. 🐳 Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 4. 🏷️ Set Docker Image Tag
+        run: echo "IMAGE_TAG=prd-${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: 5. 🚀 Build, Push, Deploy
+        env:
+          ECR_REPOSITORY_URL: ${{ needs.infra-deploy-prd.outputs.ECR_REPOSITORY_URL }}
+          FUNCTION_NAME: ${{ needs.infra-deploy-prd.outputs.FUNCTION_NAME }}
+        run: ./scripts/deploy-image.sh

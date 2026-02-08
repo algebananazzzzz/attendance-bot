@@ -1,0 +1,1 @@
+"""Attendance sync package."""

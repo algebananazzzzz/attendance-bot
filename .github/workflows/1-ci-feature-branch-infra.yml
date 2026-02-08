@@ -1,0 +1,35 @@
+# .github/workflows/ci-feature-branch.yml
+name: Feature Branch CI (infra)
+
+# Triggers:
+# - Manual trigger via GitHub UI from branches (workflow_dispatch)
+# - Automatic on pushes to specific feature branches
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'feat/**'
+      - 'feature/**'
+      - 'JIRA/**'
+    # hotfix: trigger only when infra files change.
+    # consider ways to do this for seperate jobs
+    paths:
+      - infra/**
+
+jobs:
+  lint-and-unit-tests:
+    name: Static Analysis & Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. ⬇️ Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. ⚙️ Setup Terraform Cli
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.11.0"
+
+      - name: 3. 🧪 Check Terraform Syntax
+        working-directory: infra
+        run: terraform fmt -check	

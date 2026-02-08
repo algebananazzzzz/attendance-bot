@@ -1,0 +1,14 @@
+SHEETS_SCOPE = "https://www.googleapis.com/auth/spreadsheets"
+
+HEADER_ROW_COUNT = 2
+DATA_START_ROW = 3
+
+MEMBER_COLUMNS = ["Name", "Telegram"]
+MEMBER_INFO_LABEL = "Member Info"
+TRAINING_DATES_LABEL = "Training Dates"
+TOTAL_LABEL = "Total Attendance"
+
+DATE_COLUMN_WIDTH = 140
+TOTAL_COLUMN_WIDTH = 120
+MEMBER_COLUMN_WIDTHS = [200, 160]
+CELL_PADDING = 6
